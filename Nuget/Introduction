@@ -1,0 +1,81 @@
+•	NuGet (pronounced "New Get") is a package manager designed to enable developers to share reusable code. It is a software as a service solution whose client app is free and open-source. 
+•	NuGet is the package manager for the Microsoft development platform including .NET.
+•	The NuGet client tools provide the ability to produce and consume packages. The NuGet Gallery is the central package repository used by all package authors and consumers.
+Implementation:
+•	Installing nuget packages from the Command Line
+Install a package
+dotnet add package adds a package reference to the project file, then runs dotnet restore to install the package.
+
+Open a command line and switch to the directory that contains your project file.
+
+Use the following command to install a NuGet package:
+
+.NET CLI
+
+Copy
+dotnet add package <PACKAGE_NAME>
+For example, to install the Newtonsoft.Json package, use the following command
+
+.NET CLI
+
+Copy
+dotnet add package Newtonsoft.Json
+After the command completes, look at the project file to make sure the package was installed.
+
+You can open the .csproj file to see the added reference:
+
+XML
+
+Copy
+<ItemGroup>
+  <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+</ItemGroup>
+Install a specific version of a package
+If the version is not specified, NuGet installs the latest version of the package. You can also use the dotnet add package command to install a specific version of a NuGet package:
+
+.NET CLI
+
+Copy
+dotnet add package <PACKAGE_NAME> --version <VERSION>
+For example, to add version 12.0.1 of the Newtonsoft.Json package, use this command:
+
+.NET CLI
+
+Copy
+dotnet add package Newtonsoft.Json --version 12.0.1
+List package references
+You can list the package references for your project using the dotnet list package command.
+
+.NET CLI
+
+Copy
+dotnet list package
+Remove a package
+Use the dotnet remove package command to remove a package reference from the project file.
+
+.NET CLI
+
+Copy
+dotnet remove package <PACKAGE_NAME>
+For example, to remove the Newtonsoft.Json package, use the following command
+
+.NET CLI
+
+Copy
+dotnet remove package Newtonsoft.Json
+Update a package
+NuGet installs the latest version of the package when you use the dotnet add package command unless you specify the package version (-v switch).
+
+Restore packages
+Use the dotnet restore command, which restores packages listed in the project file (see PackageReference). With .NET Core 2.0 and later, restore is done automatically with dotnet build and dotnet run. As of NuGet 4.0, this runs the same code as nuget restore.
+
+As with the other dotnet CLI commands, first open a command line and switch to the directory that contains your project file.
+
+To restore a package using dotnet restore:
+
+.NET CLI
+
+Copy
+dotnet restore 
+
+•	From Solution Explorer
