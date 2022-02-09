@@ -1,0 +1,5 @@
+Defining a data binding to change the color based on the three Slider values proved much more elusive.
+The solution is to have a separate class devoted to the job of creating a Color object from the values of Red, Green, and Blue properties . Any change to one of these three properties triggers a 
+recalculation of the Color property. In the XAML file, bindings connect the Slider controls with the Red, Green, and Blue properties and the SolidColorBrush with the Color property . Even if we don’t call 
+this class a View Model, that’s what it is.
+Here’s an RgbViewModel class that implements the INotifyPropertyChanged interface to fire PropertyChanged events whenever its Red, Green, Blue, or Color properties change:
