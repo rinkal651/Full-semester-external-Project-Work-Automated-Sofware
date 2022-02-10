@@ -1,1 +1,114 @@
+.NET Core and NuGet
 
+UWP apps are built using a framework called .NET Core. Like EF Core, .NET Core was also released last year under an open-source license. Another similarity: just as EF Core is similar but not identical to EF, .NET Core shares some APIs with the .NET Framework, but it doesn’t replace every piece of it.
+
+One of the challenges in a modern software project is keeping track of dependencies. Unless you’re building your whole project from the ground up, you’ll have a collection of other software components to manage. Furthermore, each of those components will depend on other components, and so on. Rather than keep track of that dependency graph manually, you can use a package manager. In the .NET world, the standard package manager is NuGet, which comes installed by default with Visual Studio 2015. .NET Core uses NuGet to update itself, and other components like EF Core are also available through NuGet.
+
+When you have a solution loaded in VS2015, there are two ways to add a NuGet package:
+
+The GUI way: Right-click on the References folder and click Manage NuGet Packages.
+The command-line way: Open the Package Manager Console (under Tools — NuGet Package Manager), and use the Install-Package command.
+The GUI way makes it easier to search for the package you’re looking for inside Visual Studio. But once you know the package name, the command-line way can be faster. Also, a copy-and-pastable Install-Package command is provided on nuget.org if you search for packages there.
+
+Starting with my project from last week, I added the following packages:
+
+Microsoft.EntityFrameworkCore: This is the main package for EF Core. It provides the DbContext and DbSet types that are used in this week’s example.
+Microsoft.EntityFrameworkCore.Sqlite: This is an EF Core database provider, which is required to use EF Core with a specific database, in this case SQLite.
+Microsoft.EntityFrameworkCore.Tools: This provides Package Manager Console tools for EF Core, like the Add-Migration command that I’ll describe below.
+SQLite
+To keep data around when the app closes or the computer restarts, we need some kind of data storage mechanism. For this example, I’m going to use a database stored on my local hard drive. SQLite is a popular choice, and is well-supported for UWP apps. Unlike traditional databases, SQLite doesn’t use a server process that accepts connections from an app. Instead, everything runs in the app process. When the app starts up, so does the database. When the app closes, the database does as well.
+
+Using Entity Framework commands, it’s possible to write code without knowing about the details of the physical database. Nevertheless, I’ll mention a few things about what’s going on behind the scenes.
+
+Example Scenario
+Last week’s example demonstrated XAML binding: type something in a text box, and when the text box loses focus, the text you typed appears in a text block below it. However, when you close and re-open the app, the text is gone from both places. This week, I’ll show how to save the text box content in a database so it persists between app runs.
+
+You can find the code for this example on GitHub at UWP-MVVM-EF-SQLite-2.
+
+Database Abstraction Layer
+Before working on this example, I read a tutorial by Diederik Krols called Getting started with SQLite and Entity Framework on UWP. Like the tutorial I used last week, this one explains how to build a UWP app using the MVVM pattern. However, while last week’s tutorial used a fake data layer, this one has Entity Framework code that writes to a real SQLite database.
+
+Krols’s tutorial solution has a folder called DAL (Database Abstraction Layer). DAL can mean a few different things, but in this context it refers to an interface that the view model uses to interact with the database. Since we’re using Entity Framework (which is itself a type of DAL), the classes in the DAL folder contain EF code. The DAL isolates the view model from the specifics of EF. For example, as we’ll see below, instead of calling the EF method DbContext.Add to save a task to the database, the view model can call the DAL method Repository.SaveTask, which has a more descriptive name.
+
+DbContext
+
+One of the types of classes in the DAL is a context class, a class that inherits from the Entity Framework class DbContext. Since our model class is called Task, I’ll call its corresponding context class TaskContext.
+
+One of the responsibilities of a context class is to expose data from a database table in the form of a DbSet, a representation of a database entity. For example, we can expose our Tasks table as follows in TaskContext:
+
+internal DbSet<Task> Tasks { get; set; }
+Repository
+
+The context class is consumed by a repository class, which exposes methods that the view model can call to create, read, update, and delete data. For this example, I’ll just implement create, read, and update. These actions are carried out by two methods:
+
+Method #1: SaveTask is used to create or update a task in the database:
+
+public void SaveTask(Task model)
+This method uses various combinations of four DbContext methods, along with the model parameter. To update an existing task entity, it calls Attach followed by Update. To add a new task entity, it calls Add. In either case, it calls SaveChanges to update the database.
+
+Method #2: LoadTask is used to retrieve an existing task from the database:
+
+public Task LoadTask()
+In this method, we access the DbSet<Task> Tasks property from TaskContext, and it returns a set that we can manipulate. For this example, I used LINQ to Entities to return the last task in the table:
+
+return (from t in db.Tasks
+        select t).LastOrDefault();
+Model Changes
+The Task class from last week contained just one field, string Name. To use Task as a database entity, we’ll need one more field, int Id. A field with the name Id has a special meaning to Entity Framework: it defines the primary key for the table, meaning that it uniquely identifies each row.
+
+When we retrieve an existing task from the database, the Id field in the Task object will match the Id field in the Task table.
+
+View Model Changes
+In the MVVM pattern, the repository methods are called by the view model. So we can make the following changes to TaskViewModel:
+
+Add a Save method that calls SaveTask(This). Remember that This with a capital T refers to the current instance of the model.
+Add a Load method that calls LoadTask and updates the current Task instance with the return value.
+View Changes
+The changes to MainPage.xaml are very simple:
+
+Add a Save button and bind it to Task.Save.
+Add a Load button and bind it to Task.Load.
+The XAML binding setup from last week takes care of updating the model on Save, and updating the view on Load.
+
+Creating and Updating the Database
+At this point, we have everything in place except the database itself. Taking care of that last item requires three steps.
+
+Step 1: Generate the migration code
+
+Entity Framework uses a process called migration to keep the database in sync with the model. When the model changes, you can run a command to generate EF code that makes corresponding changes to the database. Here’s how that works.
+
+In the Package Manager Console, run Add-Migration FirstMigration. That creates a solution folder called Migrations, and adds two classes:
+
+TaskContextModelSnapshot: This is a representation of the current state of the database schema.
+FirstMigration: This contains methods to upgrade and downgrade the database to the next or previous schema version.
+Step 2: Create the database
+
+For this example, I’ll add the database creation step to TaskContext, in the OnConfiguring method:
+
+optionsBuilder.UseSqlite("Filename=Tasks.db");
+Since this command doesn’t specify a path, the database is created in %LOCALAPPDATA%\Packages\(package_id)\LocalState.
+
+Step 3: Call the migration code
+
+This step can also be added to TaskContext, this time in the constructor:
+
+Database.Migrate
+Using the database file created in Step 2 and the migration code from Step 1, this step creates the database schema.
+
+Trying it Out
+The example app works as follows:
+
+Start the app.
+Type something in the text box.
+Click Save.
+Since clicking the Save button causes the text box to lose focus, the binding code runs (as explained last week), updating the model and the view model with the task name. Then the view model’s Save method, which is bound to the Save button, calls the repository’s SaveTask method.
+
+SaveTask references TaskContext for the first time, so the class constructor runs, calling the migration code. When the migration finishes running, we have a database with a Task table, but no data. (You can download and use DB Browser for SQLite to see what’s going on in the database).
+
+Once the database context is initialized, the rest of SaveTask runs. Since this is a new task, model.Id is 0, so the Add logic runs. After SaveChanges is called, the Task table has a single row with Id 1.
+
+Close the app and re-open it.
+The text box is empty at this point.
+
+Click Load.
+As far as the data binding code knows, the task name is an empty string, since we haven’t typed anything in the text box. Then the Load method in the view model calls LoadTask in the repository. If this is the first context access, then the TaskContext constructor runs, calling Database.Migrate. But there’s nothing to migrate this time, since the database is up to date. Finally, the LINQ code retrieves DbSet<Task> Tasks and executes a select query on the set to retrieve the most recent task. The result is returned to the view model, which updates its local task name. And XAML binding takes care of displaying that name in the text box and text block.
