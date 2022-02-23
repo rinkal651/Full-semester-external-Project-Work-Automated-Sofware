@@ -1,0 +1,26 @@
+<Grid Background="{StaticResource ApplicationPageBackgroundThemeBrush}">
+ <Border BorderBrush="{StaticResource ApplicationForegroundThemeBrush}"
+ BorderThickness="1"
+ HorizontalAlignment="Center"
+ VerticalAlignment="Center">
+ <Grid>
+ <Grid.RowDefinitions>
+ <RowDefinition Height="Auto" />
+ <RowDefinition Height="Auto" />
+ </Grid.RowDefinitions>
+ 
+ <Slider Name="slider"
+ Grid.Row="0"
+ Minimum="0"
+ Maximum="360" />
+ 
+ <TextBlock Text="Rotate Text with Slider"
+ Grid.Row="1"
+ FontSize="48">
+ <TextBlock.RenderTransform>
+ <RotateTransform Angle="{Binding ElementName=slider, Path=Value}" />
+ </TextBlock.RenderTransform>
+ </TextBlock>
+ </Grid>
+ </Border>
+</Grid>
